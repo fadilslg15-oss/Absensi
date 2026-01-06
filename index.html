@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sistem Pesantren</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+      body {
+        margin: 0;
+        font-family: Segoe UI;
+        background: linear-gradient(
+            rgba(0, 60, 40, 0.85),
+            rgba(0, 60, 40, 0.85)
+          ),
+          url("https://images.unsplash.com/photo-1604311795833-25b42c8552b4");
+        background-size: cover;
+        min-height: 100vh;
+      }
+      .header {
+        text-align: center;
+        color: #fff;
+        padding: 30px;
+      }
+      .container {
+        width: 95%;
+        margin: auto;
+      }
+      .card {
+        background: rgba(255, 255, 255, 0.96);
+        padding: 20px;
+        border-radius: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      }
+      h3 {
+        text-align: center;
+        color: #1b5e20;
+      }
+      button {
+        background: #1b5e20;
+        color: #fff;
+        border: none;
+        padding: 7px 15px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #2e7d32;
+      }
+      input,
+      select {
+        padding: 6px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th {
+        background: #1b5e20;
+        color: white;
+      }
+      td,
+      th {
+        border: 1px solid #999;
+        padding: 6px;
+        text-align: center;
+      }
+      .logout {
+        float: right;
+        background: #b71c1c;
+      }
+      .logout:hover {
+        background: #d32f2f;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="header">
+      <h1>🏫 Absensi Madrasah Sirojussu'adai Pesantren Gedongan</h1>
+      <p>Absensi & Nilai Santri</p>
+    </div>
+
+    <div class="container">
+      <div class="card" id="loginBox">
+        <h3>Login Ustadz</h3>
+        <input id="user" placeholder="Username" /><br /><br />
+        <input id="pass" type="password" /><br /><br />
+        <button onclick="login()">Login</button>
+      </div>
+
+      <div id="dashboard" style="display: none">
+        <div class="card">
+          <button class="logout" onclick="logout()">Logout</button>
+          <h3>Ustadz: <span id="namaUstadz"></span></h3>
+
+          <label>Kelas:</label>
+          <select id="kelas" onchange="buatAbsensi()">
+            <option>1</option>
+            <option>2A</option>
+            <option>2B</option>
+            <option>3</option>
+            <option>4</option>
+            <option>5</option>
+          </select>
+
+          <label>Tanggal:</label>
+          <input type="date" id="tanggal" onchange="buatAbsensi()" />
+        </div>
+
+        <div class="card">
+          <button onclick="showAbsensi()">Absensi</button>
+          <button onclick="showNilai()">Nilai</button>
+          <button onclick="showRekap()">Rekap Semua Kelas</button>
+          <button onclick="pdfRekap()">PDF Rekap</button>
+        </div>
+
+        <div class="card" id="absensiBox">
+          <h3>Absensi Santri</h3>
+          <table>
+            <tr>
+              <th>Nama</th>
+              <th>Status</th>
+            </tr>
+            <tbody id="absenTable"></tbody>
+          </table>
+          <br />
+          <button onclick="simpanAbsensi()">Simpan Absensi</button>
+        </div>
+
+        <div class="card" id="nilaiBox" style="display: none">
+          <h3>Nilai UTS & UAS</h3>
+          <table>
+            <tr>
+              <th>Nama</th>
+              <th>UTS</th>
+              <th>UAS</th>
+            </tr>
+            <tbody id="nilaiTable"></tbody>
+          </table>
+          <br />
+          <button onclick="simpanNilai()">Simpan Nilai</button>
+        </div>
+
+        <div class="card" id="rekapBox" style="display: none">
+          <h3>Rekap Semua Kelas</h3>
+          <div id="rekapData"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const ustadz = {
+        ustadz1: "12345",
+        ustadz2: "12345",
+        ustadz3: "12345",
+        ustadz4: "12345",
+        ustadz5: "12345",
+        ustadz6: "12345",
+        ustadz7: "12345",
+        ustadz8: "12345",
+        ustadz9: "12345",
+        ustadz10: "12345",
+        ustadz11: "12345",
+        ustadz12: "12345",
+        ustadz13: "12345",
+        ustadz14: "12345",
+        ustadz15: "12345",
+      };
+
+      const santriKelas = {
+        1: ["Ahmad", "Ali", "Budi", "Fahmi", "Hasan"],
+        "2A": ["Irfan", "Ilham", "Rizki", "Zaki", "Akbar"],
+        "2B": ["Fajar", "Dimas", "Rafi", "Naufal", "Arif"],
+        3: ["Husein", "Hamzah", "Yusuf", "Farhan", "Ammar"],
+        4: ["Raihan", "Daffa", "Azka", "Rizal", "Hilmi"],
+        5: ["Fikri", "Bagas", "Sandi", "Wildan", "Iqbal"],
+      };
+
+      function login() {
+        if (ustadz[user.value] == pass.value) {
+          loginBox.style.display = "none";
+          dashboard.style.display = "block";
+          namaUstadz.innerText = user.value;
+          buatAbsensi();
+          buatNilai();
+        } else alert("Login salah");
+      }
+      function logout() {
+        dashboard.style.display = "none";
+        loginBox.style.display = "block";
+      }
+
+      function keyAbsensi(k = kelas.value) {
+        return "absensi_" + k + "_" + tanggal.value;
+      }
+      function keyNilai(k = kelas.value) {
+        return "nilai_" + k;
+      }
+
+      function buatAbsensi() {
+        absenTable.innerHTML = "";
+        santriKelas[kelas.value].forEach((s) => {
+          absenTable.innerHTML += `
+<tr><td>${s}</td>
+<td><select><option>Hadir</option><option>Alfa</option><option>Izin</option></select></td></tr>`;
+        });
+        loadAbsensi();
+        buatNilai();
+      }
+
+      function simpanAbsensi() {
+        let d = [];
+        document.querySelectorAll("#absenTable tr").forEach((r) => {
+          d.push({
+            nama: r.children[0].innerText,
+            status: r.children[1].children[0].value,
+          });
+        });
+        localStorage.setItem(keyAbsensi(), JSON.stringify(d));
+        alert("Absensi disimpan");
+      }
+
+      function loadAbsensi() {
+        let d = JSON.parse(localStorage.getItem(keyAbsensi()));
+        if (!d) return;
+        document.querySelectorAll("#absenTable tr").forEach((r, i) => {
+          r.children[1].children[0].value = d[i].status;
+        });
+      }
+
+      function buatNilai() {
+        nilaiTable.innerHTML = "";
+        santriKelas[kelas.value].forEach((s) => {
+          nilaiTable.innerHTML += `
+<tr><td>${s}</td>
+<td><input></td><td><input></td></tr>`;
+        });
+        loadNilai();
+      }
+
+      function simpanNilai() {
+        let d = [];
+        document.querySelectorAll("#nilaiTable tr").forEach((r) => {
+          d.push({
+            nama: r.children[0].innerText,
+            uts: r.children[1].children[0].value,
+            uas: r.children[2].children[0].value,
+          });
+        });
+        localStorage.setItem(keyNilai(), JSON.stringify(d));
+        alert("Nilai disimpan");
+      }
+
+      function loadNilai() {
+        let d = JSON.parse(localStorage.getItem(keyNilai()));
+        if (!d) return;
+        document.querySelectorAll("#nilaiTable tr").forEach((r, i) => {
+          r.children[1].children[0].value = d[i].uts;
+          r.children[2].children[0].value = d[i].uas;
+        });
+      }
+
+      function showAbsensi() {
+        absensiBox.style.display = "block";
+        nilaiBox.style.display = "none";
+        rekapBox.style.display = "none";
+      }
+      function showNilai() {
+        nilaiBox.style.display = "block";
+        absensiBox.style.display = "none";
+        rekapBox.style.display = "none";
+      }
+      function showRekap() {
+        rekapBox.style.display = "block";
+        absensiBox.style.display = "none";
+        nilaiBox.style.display = "none";
+        rekapData.innerHTML = "";
+        Object.keys(santriKelas).forEach((k) => {
+          rekapData.innerHTML += `<b>Kelas ${k}</b><br>`;
+          (
+            JSON.parse(
+              localStorage.getItem("absensi_" + k + "_" + tanggal.value)
+            ) || []
+          ).forEach((s) => {
+            rekapData.innerHTML += `${s.nama} : ${s.status}<br>`;
+          });
+          rekapData.innerHTML += "<hr>";
+        });
+      }
+
+      function pdfRekap() {
+        const { jsPDF } = window.jspdf;
+        let pdf = new jsPDF();
+        let y = 10;
+        Object.keys(santriKelas).forEach((k) => {
+          pdf.text("Kelas " + k, 10, y);
+          y += 7;
+          (
+            JSON.parse(
+              localStorage.getItem("absensi_" + k + "_" + tanggal.value)
+            ) || []
+          ).forEach((s) => {
+            pdf.text("- " + s.nama + " : " + s.status, 10, y);
+            y += 6;
+          });
+          y += 5;
+        });
+        pdf.save("rekap-semua-kelas.pdf");
+      }
+    </script>
+  </body>
+</html>
